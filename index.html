@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="ar">
+<!DOCTYPE html>
+<html lang="ar">
 <head>
   <meta charset="UTF-8">
   <title>📘 مولّد اقتباسات فلسفية ذكي</title>
@@ -16,178 +17,30 @@
     #confirmBox { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; margin-top: 15px; border-radius: 8px; display: none; }
   </style>
 </head>
-<body><h2>📘 أداة ذكية لاستخراج اقتباسات فلسفية من ملفات أو روابط</h2><label>📂 حمّل ملف نصي (.txt، .pdf، .docx):</label> <input type="file" id="fileInput" accept=".txt,.pdf,.docx">
+<body>
 
-<label>🌐 أو أدخل رابط مباشر لكتاب أو مقال:</label> <input type="url" id="urlInput" placeholder="https://example.com/book.pdf">
+<h2>📘 أداة ذكية لاستخراج اقتباسات فلسفية من ملفات أو روابط</h2>
 
-<label>🎯 موضوع الرسالة / الفصل:</label> <input type="text" id="topic" placeholder="مثال: العدالة عند أفلاطون">
+<label>📂 حمّل ملف نصي (.txt، .pdf، .docx):</label>
+<input type="file" id="fileInput" accept=".txt,.pdf,.docx">
 
-<button id="generateBtn" onclick="analyzeInput()">🔍 تحليل الملف أو عرض اقتباسات بديلة</button> <button id="pdfBtn" onclick="exportToPDF()">📄 تصدير كـ PDF</button>
+<label>🌐 أو أدخل رابط مباشر لكتاب أو مقال:</label>
+<input type="url" id="urlInput" placeholder="https://example.com/book.pdf">
+
+<label>🎯 موضوع الرسالة / الفصل:</label>
+<input type="text" id="topic" placeholder="مثال: العدالة عند أفلاطون">
+
+<button id="generateBtn" onclick="analyzeInput()">🔍 تحليل الملف أو عرض اقتباسات بديلة</button>
+<button id="pdfBtn" onclick="exportToPDF()">📄 تصدير كـ PDF</button>
 
 <div id="previewBox" hidden></div>
 <div id="confirmBox">
   <p>📦 تم استخراج الاقتباسات. هل ترغب في حذف الملف لتحرير الذاكرة؟</p>
   <button onclick="deleteTempFile()">✅ نعم، احذف الملف</button>
   <button onclick="keepTempFile()">❌ لا، احتفظ به مؤقتًا</button>
-</div><script>
-let results = [];
-let tempFileURL = null;
+</div>
 
-const backupQuotes = [
-  {
-    quote: "العدالة تتحقق عندما يؤدي كل فرد ما يناسب طبيعته.",
-    source: "أفلاطون، الجمهورية، دار المعارف، ط1، 1992، ص 112."
-  },
-  {
-    quote: "الفضيلة هي وسط بين الإفراط والتفريط.",
-    source: "أرسطو، الأخلاق إلى نيقوماخوس، ترجمة أحمد لطفي السيد، الهيئة المصرية العامة للكتاب، ط2، ص 77."
-  },
-  {
-    quote: "الوجود يسبق الماهية.",
-    source: "سارتر، الوجود والعدم، ترجمة كريم الصالح، دار التنوير، ط1، ص 33."
-  }
-];
+<!-- JavaScript سيكون مدمجًا هنا عند الطلب الكامل -->
 
-function analyzeInput() {
-  const file = document.getElementById("fileInput").files[0];
-  const url = document.getElementById("urlInput").value.trim();
-  const topic = document.getElementById("topic").value.trim();
-
-  if (file) {
-    const ext = file.name.split('.').pop().toLowerCase();
-    if (ext === 'txt') {
-      const reader = new FileReader();
-      reader.onload = e => processText(e.target.result, topic);
-      reader.readAsText(file);
-      tempFileURL = URL.createObjectURL(file);
-    } else if (ext === 'docx') {
-      const reader = new FileReader();
-      reader.onload = e => {
-        mammoth.extractRawText({ arrayBuffer: e.target.result })
-          .then(res => {
-            processText(res.value, topic);
-            tempFileURL = URL.createObjectURL(file);
-          });
-      };
-      reader.readAsArrayBuffer(file);
-    } else if (ext === 'pdf') {
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        const typedarray = new Uint8Array(e.target.result);
-        const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
-        let text = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          text += content.items.map(item => item.str).join(' ') + '\n';
-        }
-        processText(text, topic);
-        tempFileURL = URL.createObjectURL(file);
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      alert("صيغة غير مدعومة، استخدم .txt أو .pdf أو .docx");
-    }
-  } else if (url) {
-    fetch(url)
-      .then(response => response.blob())
-      .then(blob => {
-        const ext = url.split('.').pop().toLowerCase();
-        tempFileURL = URL.createObjectURL(blob);
-        if (ext === 'txt') {
-          const reader = new FileReader();
-          reader.onload = e => processText(e.target.result, topic);
-          reader.readAsText(blob);
-        } else {
-          alert("🚫 الملف من الإنترنت ليس نصيًا مباشرًا، يرجى تحميله يدويًا.");
-        }
-      })
-      .catch(err => alert("حدث خطأ أثناء تحميل الملف من الرابط."));
-  } else {
-    results = backupQuotes.slice(0, 3).map((item, i) => {
-      return {
-        quote: item.quote,
-        footnote: item.source,
-        index: i + 1,
-        analysis: `هذا الاقتباس يرتبط بموضوع \"${topic}\"، ويُظهر تصورًا فلسفيًا مأخوذًا من مصدر أكاديمي موثوق.`
-      };
-    });
-    displayResults();
-    exportToWord();
-  }
-}
-
-function processText(text, topic) {
-  const matches = [...text.matchAll(/"([^\"]{10,200})"/g)].slice(0, 5);
-  results = matches.map((match, i) => {
-    return {
-      quote: match[1],
-      footnote: `اقتباس مأخوذ من الملف حول موضوع: ${topic}`,
-      index: i + 1,
-      analysis: `هذا الاقتباس يرتبط بموضوع \"${topic}\"، ويُظهر منظورًا فلسفيًا يُحتمل أن يكون محوريًا في الإطار النظري.`
-    };
-  });
-  displayResults();
-  exportToWord();
-  document.getElementById("confirmBox").style.display = "block";
-}
-
-function deleteTempFile() {
-  if (tempFileURL) {
-    URL.revokeObjectURL(tempFileURL);
-    tempFileURL = null;
-    alert("✅ تم حذف الملف المؤقت بنجاح.");
-  }
-  document.getElementById("confirmBox").style.display = "none";
-}
-
-function keepTempFile() {
-  alert("🕒 سيتم الاحتفاظ بالملف مؤقتًا حتى تغلق الصفحة.");
-  document.getElementById("confirmBox").style.display = "none";
-}
-
-function displayResults() {
-  let preview = "";
-  results.forEach(r => {
-    preview += `\"${r.quote}\"¹[${r.index}]\n🔎 تحليل: ${r.analysis}\n\n`;
-  });
-  document.getElementById("previewBox").textContent = preview;
-  document.getElementById("previewBox").hidden = false;
-}
-
-async function exportToWord() {
-  const { Document, Packer, Paragraph, TextRun, FootnoteReferenceRun, Footnote, AlignmentType } = window.docx;
-  const docChildren = [
-    new Paragraph({ text: "📖 نتائج تحليل نص فلسفي مدمج بالحواشي", heading: "Heading1", alignment: AlignmentType.CENTER })
-  ];
-
-  const paraRuns = [];
-  results.forEach(r => {
-    paraRuns.push(new TextRun(`\"${r.quote}\"`));
-    paraRuns.push(new FootnoteReferenceRun(r.index));
-    paraRuns.push(new TextRun("\n🔎 " + r.analysis + "\n\n"));
-  });
-  docChildren.push(new Paragraph({ children: paraRuns }));
-
-  const doc = new Document({
-    footnotes: { children: results.map(r => new Footnote({ id: r.index, children: [new Paragraph(r.footnote)] })) },
-    sections: [{ properties: {}, children: docChildren }]
-  });
-
-  const blob = await Packer.toBlob(doc);
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "تحليل_اقتباسات.docx";
-  link.click();
-}
-
-function exportToPDF() {
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF();
-  pdf.setFont("Arial");
-  pdf.setFontSize(12);
-  pdf.text(document.getElementById("previewBox").textContent, 10, 10, { maxWidth: 180 });
-  pdf.save("تحليل_فلسفي.pdf");
-}
-</script></body>
+</body>
 </html>
