@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>مولّد اقتباسات فلسفية متعددة مع حواشي</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.0.2/docx.umd.min.js"></script>
+  <style>
+    body { font-family: 'Tahoma'; direction: rtl; background: #f4f4f4; padding: 20px; }
+    textarea, input { width: 100%; padding: 10px; margin-top: 10px; font-size: 16px; }
+    button { padding: 10px 20px; background: #4a148c; color: white; border: none; cursor: pointer; margin-top: 15px; }
+    label { display: block; font-weight: bold; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>📘 أداة اقتباسات فلسفية متعددة مع حواشي وتصدير Word</h2>
+
+<label>📝 الفقرة الكاملة (الاقتباسات بين علامات " "):</label>
+<textarea id="paragraph" rows="6" placeholder='مثال: يرى أفلاطون أن "العدالة تتحقق عندما يؤدي كل فرد ما يناسب طبيعته". ويؤكد أرسطو أن "الفضيلة هي وسط بين الإفراط والتفريط".'></textarea>
+
+<label>📚 الحواشي (مصدر لكل اقتباس، سطر جديد):</label>
+<textarea id="footnotes" rows="5" placeholder='1. أفلاطون، الجمهورية، ترجمة: كمال الحاج؛ ط1، الهيئة العامة للكتاب، ص 112.
+2. أرسطو، الأخلاق إلى نيقوماخوس، ترجمة: أحمد لطفي السيد؛ ط2، دار الفكر، ص 77.'></textarea>
+
+<button onclick="generateDoc()">💾 توليد ملف Word</button>
+
+<script>
+async function generateDoc() {
+  const { Document, Packer, Paragraph, TextRun, FootnoteReferenceRun, Footnote, AlignmentType } = window.docx;
+
+  const paragraph = document.getElementById("paragraph").value;
+  const footnotesRaw = document.getElementById("footnotes").value.trim().split("\n");
+
+  const quoteRegex = /"([^"]+)"/g;
+  const matches = [...paragraph.matchAll(quoteRegex)];
+
+  let pointer = 0, segments = [];
+
+  matches.forEach((match, idx) => {
+    const start = match.index;
+    const end = match.index + match[0].length;
+
+    segments.push({
+      before: paragraph.slice(pointer, start),
+      quote: match[1],
+      index: idx + 1,
+    });
+
+    pointer = end;
+  });
+
+  const after = paragraph.slice(pointer);
+  const children = [];
+
+  segments.forEach(seg => {
+    children.push(new TextRun(seg.before));
+    children.push(new TextRun(`"${seg.quote}"`));
+    children.push(new FootnoteReferenceRun(seg.index));
+  });
+
+  children.push(new TextRun(after));
+
+  const footnotes = footnotesRaw.map((f, i) => new Footnote({
+    id: i + 1,
+    children: [new Paragraph(f.replace(/^\d+\.\s*/, ""))]
+  }));
+
+  const doc = new Document({
+    footnotes: { children: footnotes },
+    sections: [{
+      properties: {},
+      children: [
+        new Paragraph({
+          text: "📖 فقرة فلسفية مع اقتباسات مرقمة",
+          heading: "Heading1",
+          alignment: AlignmentType.CENTER
+        }),
+        new Paragraph({ children })
+      ]
+    }]
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "اقتباسات_مع_حواشي.docx";
+  link.click();
+}
+</script>
+
+</body>
+</html>
