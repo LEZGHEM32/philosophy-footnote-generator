@@ -89,7 +89,7 @@ function analyzeInput() {
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
           const content = await page.getTextContent();
-          text += content.items.map(item => item.str).join(' ') + '\\n';
+          text += content.items.map(item => item.str).join(' ') + '\n';
         }
         processText(text, topic);
         tempFileURL = URL.createObjectURL(file);
@@ -98,28 +98,13 @@ function analyzeInput() {
     } else {
       alert("صيغة غير مدعومة، استخدم .txt أو .pdf أو .docx");
     }
-  } else if (url) {
-    fetch(url)
-      .then(response => response.blob())
-      .then(blob => {
-        const ext = url.split('.').pop().toLowerCase();
-        tempFileURL = URL.createObjectURL(blob);
-        if (ext === 'txt') {
-          const reader = new FileReader();
-          reader.onload = e => processText(e.target.result, topic);
-          reader.readAsText(blob);
-        } else {
-          alert("🚫 الملف من الإنترنت ليس نصيًا مباشرًا، يرجى تحميله يدويًا.");
-        }
-      })
-      .catch(err => alert("حدث خطأ أثناء تحميل الملف من الرابط."));
   } else {
     results = backupQuotes.slice(0, 3).map((item, i) => {
       return {
         quote: item.quote,
         footnote: item.source,
         index: i + 1,
-        analysis: `هذا الاقتباس يرتبط بموضوع \"${topic}\"، ويُظهر تصورًا فلسفيًا مأخوذًا من مصدر أكاديمي موثوق.`
+        analysis: `هذا الاقتباس يرتبط بموضوع "${topic}"، ويُظهر تصورًا فلسفيًا مأخوذًا من مصدر أكاديمي موثوق.`
       };
     });
     displayResults();
@@ -127,13 +112,13 @@ function analyzeInput() {
 }
 
 function processText(text, topic) {
-  const matches = [...text.matchAll(/\"([^\\\"]{10,200})\"/g)].slice(0, 5);
+  const matches = [...text.matchAll(/"([^"]{10,200})"/g)].slice(0, 5);
   results = matches.map((match, i) => {
     return {
       quote: match[1],
       footnote: `اقتباس مأخوذ من الملف حول موضوع: ${topic}`,
       index: i + 1,
-      analysis: `هذا الاقتباس يرتبط بموضوع \"${topic}\"، ويُظهر منظورًا فلسفيًا يُحتمل أن يكون محوريًا في الإطار النظري.`
+      analysis: `هذا الاقتباس يرتبط بموضوع "${topic}"، ويُظهر منظورًا فلسفيًا يُحتمل أن يكون محوريًا في الإطار النظري.`
     };
   });
   displayResults();
@@ -157,7 +142,7 @@ function keepTempFile() {
 function displayResults() {
   let preview = "";
   results.forEach(r => {
-    preview += `\"${r.quote}\"¹[${r.index}]\\n🔎 تحليل: ${r.analysis}\\n\\n`;
+    preview += `"${r.quote}"¹[${r.index}]\n🔎 تحليل: ${r.analysis}\n\n`;
   });
   document.getElementById("previewBox").textContent = preview;
   document.getElementById("previewBox").hidden = false;
